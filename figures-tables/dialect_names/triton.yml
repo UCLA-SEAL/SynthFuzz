@@ -1,0 +1,12 @@
+[
+    # from Triton
+    "tt",
+    "triton_nvidia_gpu",
+    "nvgpu",
+    "triton_gpu",
+    # from MLIR
+    "arith",
+    "builtin",
+    "llvm",
+    "scf",
+]

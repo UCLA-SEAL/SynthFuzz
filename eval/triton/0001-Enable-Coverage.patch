@@ -1,0 +1,27 @@
+From e03dbd7e49d09ffd98fff98eb9f3cc54ea8e7066 Mon Sep 17 00:00:00 2001
+From: Anonymous <anon@example.com>
+Date: Sat, 9 Mar 2024 01:37:11 +0000
+Subject: [PATCH] Enable Coverage
+
+---
+ python/setup.py | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/python/setup.py b/python/setup.py
+index 09c9a63a6..71cb94659 100644
+--- a/python/setup.py
++++ b/python/setup.py
+@@ -356,6 +356,10 @@ class CMakeBuild(build_ext):
+                 "-DCMAKE_C_FLAGS=-fsanitize=address",
+                 "-DCMAKE_CXX_FLAGS=-fsanitize=address",
+             ]
++        cmake_args += [
++            "-DCMAKE_C_FLAGS=-fprofile-instr-generate -fcoverage-mapping",
++            "-DCMAKE_CXX_FLAGS=-fprofile-instr-generate -fcoverage-mapping",
++        ]
+ 
+         if check_env_flag("TRITON_BUILD_WITH_CCACHE"):
+             cmake_args += [
+-- 
+2.34.1
+

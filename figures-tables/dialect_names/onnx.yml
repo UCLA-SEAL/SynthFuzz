@@ -1,0 +1,12 @@
+[
+   # from ONNX
+   "onnx", "krnl", "zhigh", 
+   # from MLIR
+   "arith",
+   "builtin",
+   "func",
+   "memref",
+   # from other
+   "chlo",
+   "stablehlo",
+]
