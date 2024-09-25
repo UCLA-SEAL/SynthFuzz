@@ -1,3 +1,9 @@
+# Paper 
+
+Fuzzing MLIR compilers with Custom Mutation Synthesis, Ben Limpanukorn, Jiyuan Wang, Hong Jin Kang, Eric Zitong Zhou, Miryung Kim, 47th International Conference on Software Engineering (ICSE '25) 12 pages 
+https://arxiv.org/abs/2404.16947
+
+
 # Requirements
 
 Before running this artifact, please install Docker ([Installation Instructions](https://docs.docker.com/engine/install/)).
