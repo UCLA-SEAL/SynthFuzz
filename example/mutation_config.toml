@@ -4,7 +4,6 @@ should_substitute = [
     "non_function_type"
 ]
 no_duplicate = [
-    #"op_result.ssa_id",
 ]
 
 [parameterization]
