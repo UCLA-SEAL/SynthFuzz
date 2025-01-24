@@ -3,20 +3,93 @@
 Fuzzing MLIR compilers with Custom Mutation Synthesis, Ben Limpanukorn, Jiyuan Wang, Hong Jin Kang, Eric Zitong Zhou, Miryung Kim, 47th International Conference on Software Engineering (ICSE '25) 12 pages 
 https://arxiv.org/abs/2404.16947
 
+# Purpose
 
-# Requirements
+This artifact contains the implementation of SynthFuzz and the scripts required to reproduce the results presented in the paper.
+
+## Badges
+
+We would like to apply for the following badges:
+- Available: This artifact has been made permanently available for retrieval at the following link: https://figshare.com/s/b96ea4a64f6c6a0ece12
+- Functional: We have included and documented all components required to exercise the package and reproduce the results in our paper. Please see the following *Usage* section in the README for more information.
+- Reusable: The SynthFuzz algorithm is implemented as an extension of Grammarinator and can be re-used and re-purposed for fuzzing other domains as discussed in the *Generalizability* section of the paper. A usage example is provided under the `example` directory and described below in the `Usage: Example` section.
+
+# Provenance
+
+This artifact can be obtained on FigShare: https://figshare.com/s/b96ea4a64f6c6a0ece12
+or on GitHub at: https://github.com/UCLA-SEAL/SynthFuzz
+
+A preprint has been made available at: https://arxiv.org/abs/2404.16947
+
+# Setup
+
+## Hardware
+
+This artifact was tested on a machine with an AMD Ryzen 2950X CPU with 32 GB of RAM.
+
+## Software
 
 Before running this artifact, please install Docker ([Installation Instructions](https://docs.docker.com/engine/install/)).
 Please also ensure that this artifact is extracted to a directory whose absolute path does not contain spaces.
 
 1. Build the docker image by running `./docker/build.sh`
 2. Start the container by running `./docker/run_default.sh`
-3. Enter the container by running `./docker/attach.sh`. All commands after this point should be run inside the container.
+3. Enter the container by running `./docker/attach.sh`. **All commands after this point should be run inside the container.**
 
-# Generating Figures and Tables
+
+# Usage: Example
+
+An example script and data has been provided under the `example` directory to demonstrate how to use SynthFuzz.
+
+SynthFuzz is implemented as an extension to [Grammarinator](https://github.com/renatahodovan/grammarinator) and can be used in the same fashion.
+
+To run this example, simply run the example script:
+```bash
+cd example
+./example.sh
+```
+
+This script will execute the follwoing commands:
+
+Firstly, the grammar is processed to produce a test generator. For SynthFuzz, this step also generates a `insert_patterns.pkl` file which is used by the fuzzer to determine which production rules contain quantifiers.
+
+```bash
+python -m mlirmut.synthfuzz.process mlir_2023.g4 --rule start_rule -o mlirgen
+```
+
+Then, using Grammarinator, the inputs are parsed using the grammar to generate parse-trees which are used as seed inputs for the fuzzer:
+
+```bash
+grammarinator-parse \
+    -r start_rule \
+    -i inputs/*.mlir \
+    -o trees \
+    mlir_2023.g4
+```
+
+Finally, the fuzzer can be used to generate inputs:
+
+```bash
+python -m mlirmut.synthfuzz.generate \
+    mlir_2023Generator.mlir_2023Generator \
+    -r start_rule \
+    -d 100 \
+    -o outputs/%d.mlir \
+    -n 10 \
+    --sys-path mlirgen \
+    --population trees \
+    --insert-patterns mlirgen/insert_patterns.pkl \
+    --mutation-config mutation_config.toml \
+    --keep-trees \
+    --no-generate --no-recombine --no-mutate \
+    --k-ancestors=4 --l-siblings=4 --r-siblings=4
+```
+For more information regarding SynthFuzz-specific command line options, run: `python -m mlirmut.synthfuzz.generate --help`
+
+# Usage: Generating Figures and Tables
 
 The post-processed branch and dialect pair coverage has been included with this artifact for convenience.
-If you would like to reproduce the results from scratch delete the `synthfuzz-icse2025/data` directory and follow the directions in the *Running Experiments and Collecting Coverage From Scratch* section before continuing with this section. Note that running the experiments from scratch may take several days depending on your machine.
+If you would like to reproduce the results from scratch delete the `data` directory and follow the directions in the *Running Experiments and Collecting Coverage From Scratch* section before continuing with this section. Note that running the experiments from scratch may take several days depending on your machine.
 
 ## RQ1: Branch Coverage
 *All commands should be run inside the Docker container.*
@@ -50,8 +123,9 @@ cd /synthfuzz
 python figures-tables/ablation-params.py
 ```
 
-# Running Experiments and Collecting Coverage:
+# Running Experiments from Scratch and Collecting Coverage:
 *All commands should be run inside the Docker container.*
+This section is only required if you would like to re-generate the `data` directory from scratch.
 
 1. Compile each subject program:
 ```bash
