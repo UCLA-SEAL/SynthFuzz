@@ -1,0 +1,20 @@
+FROM benlimpa/synthfuzz_base:v1
+
+# Add a new user with the same user ID and group ID from the host machine
+ARG USER
+ARG USER_ID
+ARG GROUP
+ARG GROUP_ID
+RUN groupadd -g $GROUP_ID $GROUP && \
+    adduser --uid $USER_ID --ingroup $GROUP $USER
+
+# Give the current user sudo rights
+RUN echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER && \
+    chmod 0440 /etc/sudoers.d/$USER
+    
+# Switch to the given user
+USER $USER
+
+ENV CONDA_DIR="/conda"
+RUN echo ". ${CONDA_DIR}/etc/profile.d/conda.sh && . ${CONDA_DIR}/etc/profile.d/mamba.sh" >> ~/.bashrc \
+    && echo "mamba activate synthfuzz" >> ~/.bashrc
