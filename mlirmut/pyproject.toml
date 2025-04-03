@@ -1,27 +1,26 @@
-[tool.poetry]
+[project]
 name = "mlirmut"
 version = "0.1.0"
 description = ""
 authors = []
+requires-python = ">=3.12,<3.13"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = ">=3.12,<3.13"
-pymlir = "^0.4"
-lark = "^1.1.5"
-tqdm = "^4.65.0"
-dill = "^0.3.6"
-grammarinator = "~23.7"
-pandas = "^2.1.1"
-click = "^8.1.7"
-pyarrow = "^15.0.0"
-scipy = "^1.12.0"
-scikit-learn = "^1.4.1.post1"
-matplotlib = "^3.8.3"
-seaborn = "^0.13.2"
-matplotlib-venn = "^0.11.10"
-
+dependencies = [
+    "pymlir>=0.4,<0.5",
+    "lark>=1.1.5,<2",
+    "tqdm>=4.65.0,<5",
+    "dill>=0.3.6,<0.4",
+    "grammarinator>=23.7,<23.8",
+    "pandas>=2.1.1,<3",
+    "click>=8.1.7,<9",
+    "pyarrow>=15.0.0,<16",
+    "scipy>=1.12.0,<2",
+    "scikit-learn>=1.4.1.post1,<2",
+    "matplotlib>=3.8.3,<4",
+    "seaborn>=0.13.2,<0.14",
+    "matplotlib-venn>=0.11.10,<0.12",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
