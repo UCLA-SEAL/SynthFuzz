@@ -1,9 +1,11 @@
 import logging
 import random
 from itertools import batched
+
 from grammarinator.tool.default_population import DefaultPopulation, DefaultTree
 
 logger = logging.getLogger(__name__)
+
 
 # Grammarinator's left and right sibling properties are broken
 # since the __getattr__ workaround overrides them
@@ -12,14 +14,25 @@ def left_sibling(node):
         return None
     idx = node.parent.children.index(node)
     return node.parent.children[idx - 1] if idx > 0 else None
+
+
 def right_sibling(node):
     if not node.parent:
         return None
     idx = node.parent.children.index(node)
-    return node.parent.children[idx + 1] if idx < len(node.parent.children) - 1 else None
+    return (
+        node.parent.children[idx + 1] if idx < len(node.parent.children) - 1 else None
+    )
+
 
 class ContextFilter:
-    def __init__(self, k_ancestors: int, l_siblings: int, r_siblings: int, limit_by_donor_context: bool = True):
+    def __init__(
+        self,
+        k_ancestors: int,
+        l_siblings: int,
+        r_siblings: int,
+        limit_by_donor_context: bool = True,
+    ):
         self.k_ancestors = k_ancestors
         self.l_siblings = l_siblings
         self.r_siblings = r_siblings
@@ -38,6 +51,7 @@ class ContextFilter:
             r_node = r_node.parent
             d_node = d_node.parent
         return True
+
     def verify_l_siblings(self, recipient, donor):
         r_node = left_sibling(recipient)
         d_node = left_sibling(donor)
@@ -51,6 +65,7 @@ class ContextFilter:
             r_node = left_sibling(r_node)
             d_node = left_sibling(d_node)
         return True
+
     def verify_r_siblings(self, recipient, donor):
         r_node = right_sibling(recipient)
         d_node = right_sibling(donor)
@@ -78,8 +93,10 @@ class SynthFuzzPopulation(DefaultPopulation):
         limit_by_donor_context: bool = True,
     ):
         super().__init__(directory=directory, min_depths=min_depths)
-        self.context_filter = ContextFilter(k_ancestors, l_siblings, r_siblings, limit_by_donor_context)
-    
+        self.context_filter = ContextFilter(
+            k_ancestors, l_siblings, r_siblings, limit_by_donor_context
+        )
+
     def select_to_insert(self, max_depth):
         tree_fn_options = self._random_individuals(n=len(self._files))
         for batch in batched(tree_fn_options, 2):
@@ -119,9 +136,17 @@ class SynthFuzzPopulation(DefaultPopulation):
                 donor_options = tuple(donor_tree.nodes_by_name[recipient_node.name])
                 for donor_node in random.sample(donor_options, k=len(donor_options)):
                     # Make sure that the ancestors and siblings match
-                    if not (self.context_filter.verify_k_ancestors(recipient_node, donor_node)
-                        and self.context_filter.verify_l_siblings(recipient_node, donor_node)
-                        and self.context_filter.verify_r_siblings(recipient_node, donor_node)):
+                    if not (
+                        self.context_filter.verify_k_ancestors(
+                            recipient_node, donor_node
+                        )
+                        and self.context_filter.verify_l_siblings(
+                            recipient_node, donor_node
+                        )
+                        and self.context_filter.verify_r_siblings(
+                            recipient_node, donor_node
+                        )
+                    ):
                         continue
                     # Make sure that the output tree won't exceed the depth limit.
                     if (

@@ -1,8 +1,8 @@
-import tomllib
-import random
-import subprocess
 import json
+import random
 import re
+import subprocess
+import tomllib
 
 
 class Driver:
@@ -60,7 +60,8 @@ class Driver:
         )
         return (
             # for now we'll just filter by return code
-            proc.returncode not in self.retcode_filter, #or self.error_filter.search(proc.stderr) is None,
+            proc.returncode
+            not in self.retcode_filter,  # or self.error_filter.search(proc.stderr) is None,
             proc.returncode,
             proc.stderr,
         )
