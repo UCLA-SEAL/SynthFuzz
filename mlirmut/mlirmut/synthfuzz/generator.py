@@ -116,6 +116,7 @@ class SynthFuzzGeneratorTool:
         test_output_path=None,
         fitness_log_only=False,
         disable_parameters=False,
+        output_trees=False,
     ):
         """
         :param generator_factory: A callable that can produce instances of a
@@ -172,6 +173,7 @@ class SynthFuzzGeneratorTool:
         self._cleanup = cleanup
         self._encoding = encoding
         self._errors = errors
+        self._output_trees = output_trees
 
         self._edit_rand = random.Random(edit_seed)
         self._edit_log = edit_log
@@ -331,6 +333,9 @@ class SynthFuzzGeneratorTool:
                 self._population.add_individual(result.mutant, path=test_fn)
 
             if test_fn:
+                if self._output_trees:
+                    with open(test_fn + ".pkl", "wb") as f:
+                        dill.dump(result.mutant, f)
                 with codecs.open(test_fn, "w", self._encoding, self._errors) as f:
                     f.write(test)
             else:

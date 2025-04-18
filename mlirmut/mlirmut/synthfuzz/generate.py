@@ -137,6 +137,7 @@ def generator_tool_helper(args, weights, lock, save_to_file):
         save_to_file=save_to_file,
         fitness_log_only=args.fitness_log_only,
         disable_parameters=args.disable_parameters,
+        output_trees=args.output_trees,
     )
 
 
@@ -389,6 +390,11 @@ def execute():
         metavar="NUM",
         help="initialize random number generator with fixed seed (not set by default). We use a separate RNG for edits for reproducibility with recombination.",
     )
+    parser.add_argument(
+        "--output-trees",
+        action="store_true",
+        help="output the generated trees instead of serializing it during the test generation process.",
+    )
     add_encoding_argument(parser, help="output file encoding (default: %(default)s).")
     add_encoding_errors_argument(parser)
     add_jobs_argument(parser)
@@ -447,7 +453,10 @@ def execute():
 
     else:
         with generator_tool_helper(
-            args, weights=args.weights, lock=None
+            args,
+            weights=args.weights,
+            lock=None,
+            save_to_file=save_to_file,
         ) as generator_tool:
             for i in count(0) if args.n == inf else range(args.n):
                 create_test(generator_tool, i, seed=args.random_seed)
