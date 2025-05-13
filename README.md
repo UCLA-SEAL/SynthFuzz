@@ -3,16 +3,7 @@
 Fuzzing MLIR compilers with Custom Mutation Synthesis, Ben Limpanukorn, Jiyuan Wang, Hong Jin Kang, Eric Zitong Zhou, Miryung Kim, 47th International Conference on Software Engineering (ICSE '25) 12 pages 
 https://arxiv.org/abs/2404.16947
 
-# Purpose
-
-This artifact contains the implementation of SynthFuzz and the scripts required to reproduce the results presented in the paper.
-
-## Badges
-
-We would like to apply for the following badges:
-- Available: This artifact has been made permanently available for retrieval at the following link: https://doi.org/10.6084/m9.figshare.25458925
-- Functional: We have included and documented all components required to exercise the package and reproduce the results in our paper. Please see the following *Usage* section in the README for more information.
-- Reusable: The SynthFuzz algorithm is implemented as an extension of Grammarinator and can be re-used and re-purposed for fuzzing other domains as discussed in the *Generalizability* section of the paper. A usage example is provided under the `example` directory and described below in the `Usage: Example` section.
+A video recording of the slides presented at ICSE 2025 is available here: https://youtu.be/lQ4vZQF2BnQ
 
 # Provenance
 
