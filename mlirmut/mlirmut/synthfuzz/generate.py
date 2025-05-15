@@ -52,6 +52,7 @@ def process_args(args):
     args.listener = import_list(args.listener)
     args.transformer = import_list(args.transformer)
     args.serializer = import_object(args.serializer) if args.serializer else None
+    args.filter = import_list(args.filter)
 
     if args.weights:
         if not exists(args.weights):
@@ -127,6 +128,7 @@ def generator_tool_helper(args, weights, lock, save_to_file):
         insert_patterns=insert_patterns,
         mutation_config_path=args.mutation_config,
         transformers=args.transformer,
+        filters=args.filter,
         serializer=args.serializer,
         cleanup=False,
         encoding=args.encoding,
@@ -190,6 +192,13 @@ def execute():
         default=[],
         help="reference to a transformer (in package.module.function format) to postprocess the generated tree "
         "(the result of these transformers will be saved into the serialized tree, e.g., variable matching).",
+    )
+    parser.add_argument(
+        "--filter",
+        metavar="NAME",
+        action="append",
+        default=[],
+        help="reference to a filter (in package.module.function format) to filter the generated trees",
     )
     parser.add_argument(
         "-s",

@@ -117,6 +117,7 @@ class SynthFuzzGeneratorTool:
         fitness_log_only=False,
         disable_parameters=False,
         output_trees=False,
+        filters=[],
     ):
         """
         :param generator_factory: A callable that can produce instances of a
@@ -212,6 +213,7 @@ class SynthFuzzGeneratorTool:
             mutation_config["fitness_criteria"]["should_substitute"]
         )
         self._fitness_log_only = fitness_log_only
+        self._filter = filters
 
         self._driver = driver
         self._save_errors_only = save_errors_only
@@ -288,7 +290,12 @@ class SynthFuzzGeneratorTool:
             result = creator()
             # retry if it fails the fitness criteria
             tries = 1
-            while (not self._fitness_log_only) and (not result.is_fit) and (tries < 10):
+            while (
+                (not self._fitness_log_only)
+                and (not result.is_fit)
+                and (tries < 10)
+                and (all(f(result.mutant) for f in self._filter))
+            ):
                 result = creator()
                 tries += 1
             if not result.is_fit:
