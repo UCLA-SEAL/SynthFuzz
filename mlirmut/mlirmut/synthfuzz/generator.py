@@ -307,6 +307,9 @@ class SynthFuzzGeneratorTool:
                 )
         else:
             result = creator()
+        before_transform = deepcopy(result.mutant)
+        # ensure there's no aliasing between nodes
+        result.mutant = deepcopy(result.mutant)
         for transformer in self._transformers:
             result.mutant = transformer(result.mutant)
 
@@ -344,6 +347,8 @@ class SynthFuzzGeneratorTool:
 
             if test_fn:
                 if self._output_trees:
+                    with open(test_fn + "-before-transform.pkl", "wb") as f:
+                        dill.dump(before_transform, f)
                     with open(test_fn + ".pkl", "wb") as f:
                         dill.dump(result.mutant, f)
                 with codecs.open(test_fn, "w", self._encoding, self._errors) as f:
