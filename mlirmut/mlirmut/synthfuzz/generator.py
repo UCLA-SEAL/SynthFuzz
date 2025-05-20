@@ -287,20 +287,23 @@ class SynthFuzzGeneratorTool:
         strategy, creator = random.choice(creators)
 
         if strategy in ["edit", "insert"]:
-            result = creator()
-            # retry if it fails the fitness criteria
-            tries = 1
-            while (
-                (not self._fitness_log_only)
-                and (not result.is_fit)
-                and (tries < 10)
-                and (all(f(result.mutant) for f in self._filter))
-            ):
+            tries = 0
+            is_fit = False
+            while not is_fit:
                 result = creator()
+                if tries > 20:
+                    break
+                # retry if it fails the fitness criteria
+                # fitness_log_only skips the fitness check
+                is_fit = result.is_fit or self._fitness_log_only
+                # check if we can repair the mutant
+                for f in self._filter:
+                    satisfied = f(result.mutant)
+                    is_fit = is_fit and satisfied
                 tries += 1
             if not result.is_fit:
                 logger.warning(
-                    "Failed to generate fit mutant after 10 tries; keeping the mutant anyway."
+                    f"Failed to generate fit mutant (i={index}) after 20 tries; keeping the mutant anyway."
                 )
         else:
             result = creator()
