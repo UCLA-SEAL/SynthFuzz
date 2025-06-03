@@ -426,28 +426,30 @@ class SynthFuzzGeneratorTool:
         :return: The root of the recombined tree.
         :rtype: Rule
         """
-        original_donor = deepcopy(donor_node)
-        original_recipient = deepcopy(recipient_node)
-        if recipient_node.name != donor_node.name:
+        mutant_donor = deepcopy(donor_node)
+        mutant_recipient = deepcopy(recipient_node)
+        if mutant_recipient.name != mutant_donor.name:
             raise ValueError(
-                f"{recipient_node.name} cannot be replaced with {donor_node.name}"
+                f"{mutant_recipient.name} cannot be replaced with {mutant_donor.name}"
             )
 
-        node = recipient_node.replace(donor_node)
+        node = mutant_recipient.replace(mutant_donor)
         while node.parent:
             node = node.parent
         return EditResult(
             mutant=node,
             is_fit=True,
             fitness_violation=FitnessViolation.NONE,
-            donor=original_donor,
-            recipient=original_recipient,
+            donor=donor_node,
+            recipient=recipient_node,
             substitutions=dict(),
         )
 
     def insert(self, recipient_tree: DefaultTree, donor_tree: DefaultTree):
+        mutant_recipient_tree = deepcopy(recipient_tree)
+        mutant_donor_tree = deepcopy(donor_tree)
         valid_parents = list(
-            self._insert_parents & set(recipient_tree.nodes_by_name.keys())
+            self._insert_parents & set(mutant_recipient_tree.nodes_by_name.keys())
         )
         random.shuffle(valid_parents)
         # for each possible parent node in the recipient tree:
@@ -455,7 +457,10 @@ class SynthFuzzGeneratorTool:
             # verify that the donor tree has the required nodes for this insertion pattern
             insert_pattern = self._insert_patterns[parent_name]
             if (
-                len(insert_pattern.child_rules - set(donor_tree.nodes_by_name.keys()))
+                len(
+                    insert_pattern.child_rules
+                    - set(mutant_donor_tree.nodes_by_name.keys())
+                )
                 > 0
             ):
                 continue
@@ -506,7 +511,7 @@ class SynthFuzzGeneratorTool:
                 return insertion_locations
 
             # for each possible insertion location in the recipient tree:
-            recipient_parents = list(recipient_tree.nodes_by_name[parent_name])
+            recipient_parents = list(mutant_recipient_tree.nodes_by_name[parent_name])
             for recipient_parent in recipient_parents:
                 insertion_locations = greedy_quantifier_match(recipient_parent)
                 if insertion_locations is None:
@@ -541,8 +546,9 @@ class SynthFuzzGeneratorTool:
 
                         # TODO allow multiple edits
                         return self.edit(recipient_node, donor_node)
+        # if we failed to find a valid insertion location, we return an error result
         return InsertResult(
-            mutant=recipient_tree.root,
+            mutant=mutant_recipient_tree.root,
             donor=donor_tree.root,
             recipient=recipient_tree.root,
             substitutions=None,
@@ -572,14 +578,15 @@ class SynthFuzzGeneratorTool:
                 self.index_nodes(child, nodes_by_name, exclude_subtree)
 
     def edit(self, recipient_node, donor_node):
-        original_donor = deepcopy(donor_node)
-        original_recipient = deepcopy(recipient_node)
         substitutions = dict()
 
         # if the donor has no children, then we can't do any adaptations
         # if we disabled parameters, just do a regular recombine
         if not donor_node.children or self._disable_parameters:
             return self.recombine(recipient_node, donor_node)
+
+        mutant_donor = deepcopy(donor_node)
+        mutant_recipient = deepcopy(recipient_node)
 
         # get the root node of the donor tree
         def get_root(node):
@@ -588,14 +595,14 @@ class SynthFuzzGeneratorTool:
                 root = root.parent
             return root
 
-        donor_root = get_root(donor_node)
+        donor_root = get_root(mutant_donor)
 
         # index the donor tree for possible substitutions
         fragment_nodes = dict()
-        for child in donor_node.children:
+        for child in mutant_donor.children:
             self.index_nodes(child, fragment_nodes, exclude_subtree=None)
         context_nodes = dict()
-        self.index_nodes(donor_root, context_nodes, exclude_subtree=donor_node)
+        self.index_nodes(donor_root, context_nodes, exclude_subtree=mutant_donor)
         common_names = set(fragment_nodes.keys()) & set(context_nodes.keys())
 
         # traverse the recipient and donor trees to find substitutions
@@ -735,14 +742,15 @@ class SynthFuzzGeneratorTool:
             param_value = self._edit_rand.choice(param_values)
             substitutions[a_node] = param_value
             for param_node in parameters[a_node]:
-                param_node.replace(param_value)
+                param_value_copy = deepcopy(param_value)
+                param_node.replace(param_value_copy)
                 if param_node in to_check:
                     to_check.remove(param_node)
         is_fit = len(to_check) == 0
         fitness_violation = FitnessViolation.NONE if is_fit else FitnessViolation.SUB
 
         # insert fragment
-        node = recipient_node.replace(donor_node)
+        node = mutant_recipient.replace(mutant_donor)
         while node.parent:
             node = node.parent
 
@@ -770,8 +778,8 @@ class SynthFuzzGeneratorTool:
 
         return EditResult(
             mutant=node,
-            donor=original_donor,
-            recipient=original_recipient,
+            donor=donor_node,
+            recipient=recipient_node,
             substitutions=substitutions,
             is_fit=is_fit,
             fitness_violation=fitness_violation,
