@@ -117,6 +117,7 @@ class SynthFuzzGeneratorTool:
         fitness_log_only=False,
         disable_parameters=False,
         output_trees=False,
+        filter_kwargs={},
         filters=[],
     ):
         """
@@ -175,6 +176,7 @@ class SynthFuzzGeneratorTool:
         self._encoding = encoding
         self._errors = errors
         self._output_trees = output_trees
+        self._filter_kwargs = filter_kwargs
 
         self._edit_rand = random.Random(edit_seed)
         self._edit_log = edit_log
@@ -182,13 +184,13 @@ class SynthFuzzGeneratorTool:
         self._insert_parents = set(insert_patterns.keys())
         self._insert_patterns: dict[str, InsertMatchPattern] = insert_patterns
         if mutation_config_path is None:
-            mutation_config = {
+            self.mutation_config = {
                 "fitness_criteria": {"should_substitute": [], "no_duplicate": []},
                 "parameterization": {"blacklist": []},
             }
         else:
             with mutation_config_path.open("rb") as f:
-                mutation_config = tomllib.load(f)
+                self.mutation_config = tomllib.load(f)
 
         def build_match_dict(config_list):
             match_dict = dict()
@@ -204,13 +206,13 @@ class SynthFuzzGeneratorTool:
             return match_dict
 
         self._parameter_blacklist = build_match_dict(
-            mutation_config["parameterization"]["blacklist"]
+            self.mutation_config["parameterization"]["blacklist"]
         )
         self._fitness_no_dupes = build_match_dict(
-            mutation_config["fitness_criteria"]["no_duplicate"]
+            self.mutation_config["fitness_criteria"]["no_duplicate"]
         )
         self._fitness_should_sub = build_match_dict(
-            mutation_config["fitness_criteria"]["should_substitute"]
+            self.mutation_config["fitness_criteria"]["should_substitute"]
         )
         self._fitness_log_only = fitness_log_only
         self._filter = filters
@@ -298,7 +300,7 @@ class SynthFuzzGeneratorTool:
                 is_fit = result.is_fit or self._fitness_log_only
                 # check if we can repair the mutant
                 for f in self._filter:
-                    satisfied = f(result.mutant)
+                    satisfied = f(result.mutant, **self._filter_kwargs)
                     is_fit = is_fit and satisfied
                 tries += 1
             if not result.is_fit:

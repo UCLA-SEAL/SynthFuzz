@@ -1,5 +1,6 @@
 import logging
 import random
+import tomllib
 from itertools import batched
 
 from grammarinator.tool.default_population import DefaultPopulation, DefaultTree
@@ -89,10 +90,17 @@ class SynthFuzzPopulation(DefaultPopulation):
         k_ancestors: int,
         l_siblings: int,
         r_siblings: int,
+        mutation_config_path=None,
         min_depths=None,
         limit_by_donor_context: bool = True,
     ):
         super().__init__(directory=directory, min_depths=min_depths)
+        if mutation_config_path:
+            with open(mutation_config_path, "rb") as f:
+                self.mutation_config = tomllib.load(f)
+        else:
+            self.mutation_config = {}
+        self.valid_types = self.mutation_config.get("valid_types", [])
         self.context_filter = ContextFilter(
             k_ancestors, l_siblings, r_siblings, limit_by_donor_context
         )
@@ -129,6 +137,11 @@ class SynthFuzzPopulation(DefaultPopulation):
                 ),
                 max_depth,
             )
+            # Filter out nodes that are not in the valid types
+            if self.valid_types:
+                recipient_options = [
+                    node for node in recipient_options if node.name in self.valid_types
+                ]
             # Shuffle suitable nodes with sample.
             for recipient_node in random.sample(
                 recipient_options, k=len(recipient_options)

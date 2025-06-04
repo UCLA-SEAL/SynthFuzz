@@ -115,6 +115,7 @@ def generator_tool_helper(args, weights, lock, save_to_file):
                 k_ancestors=args.k_ancestors,
                 l_siblings=args.l_siblings,
                 r_siblings=args.r_siblings,
+                mutation_config_path=args.mutation_config,
             )
             if args.population
             else None
@@ -140,6 +141,7 @@ def generator_tool_helper(args, weights, lock, save_to_file):
         fitness_log_only=args.fitness_log_only,
         disable_parameters=args.disable_parameters,
         output_trees=args.output_trees,
+        filter_kwargs=args.filter_kwargs,
     )
 
 
@@ -404,6 +406,9 @@ def execute():
         action="store_true",
         help="output the generated trees instead of serializing it during the test generation process.",
     )
+    parser.add_argument(
+        "--filter-arg", action="append", default=[], metavar="KEY=VALUE"
+    )
     add_encoding_argument(parser, help="output file encoding (default: %(default)s).")
     add_encoding_errors_argument(parser)
     add_jobs_argument(parser)
@@ -421,6 +426,22 @@ def execute():
         process_args(args)
     except ValueError as e:
         parser.error(e)
+
+    filter_kwargs = {}
+    for item in args.filter_arg:
+        if "=" not in item:
+            parser.error(f"Invalid --filter-arg format: {item!r}. Must be KEY=VALUE.")
+        key, value = item.split("=", 1)
+        value = value.strip()
+        # Require value to be a quoted string
+        if (value.startswith('"') and value.endswith('"')) or (
+            value.startswith("'") and value.endswith("'")
+        ):
+            value = value[1:-1]
+        else:
+            parser.error(f"--filter-arg value must be a quoted string: {item!r}")
+        filter_kwargs[key] = value
+    args.filter_kwargs = filter_kwargs
 
     save_to_file = True
     # If the batch size is > 1, then we need a separate batch directory
