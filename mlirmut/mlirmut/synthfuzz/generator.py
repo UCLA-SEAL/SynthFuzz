@@ -248,51 +248,85 @@ class SynthFuzzGeneratorTool:
         """
         creators = []
         if self._enable_generation:
-            creators.append(("generate", self.generate))
+            creators.append(("generate", self.generate, lambda: {}))
         if self._population:
             if self._enable_mutation and self._population.can_mutate():
                 creators.append(
                     (
                         "mutate",
-                        lambda: self.mutate(
-                            self._population.select_to_mutate(self._max_depth)
-                        ),
+                        self.mutate,
+                        lambda: {
+                            "mutated_node": self._population.select_to_mutate(
+                                self._max_depth
+                            )
+                        },
                     )
                 )
             if self._enable_recombination and self._population.can_recombine():
                 creators.append(
                     (
                         "recombine",
-                        lambda: self.recombine(
-                            *self._population.select_to_recombine(self._max_depth)
-                        ),
+                        self.recombine,
+                        lambda: {
+                            name: value
+                            for name, value in zip(
+                                ["recipient_node", "donor_node"],
+                                self._population.select_to_recombine(self._max_depth),
+                            )
+                        },
                     )
                 )
             if self._enable_edit and self._population.can_recombine():
                 creators.append(
                     (
                         "edit",
-                        lambda: self.edit(
-                            *self._population.select_to_recombine(self._max_depth)
-                        ),
+                        self.edit,
+                        lambda: {
+                            name: value
+                            for name, value in zip(
+                                ["recipient_node", "donor_node"],
+                                self._population.select_to_recombine(self._max_depth),
+                            )
+                        },
                     )
                 )
             if self._enable_insert and self._population.can_recombine():
                 creators.append(
                     (
                         "insert",
-                        lambda: self.insert(
-                            *self._population.select_to_insert(self._max_depth)
-                        ),
+                        self.insert,
+                        lambda: {
+                            name: value
+                            for name, value in zip(
+                                ["recipient_tree", "donor_tree"],
+                                self._population.select_to_insert(self._max_depth),
+                            )
+                        },
                     )
                 )
-        strategy, creator = random.choice(creators)
+        strategy, creator, selector = random.choice(creators)
 
         if strategy in ["edit", "insert"]:
             tries = 0
             is_fit = False
             while not is_fit:
-                result = creator()
+                recipient_node, donor_node = selector().values()
+                if self._save_to_file and self._output_trees:
+                    test_fn = (
+                        self._out_format % index
+                        if "%d" in self._out_format
+                        else self._out_format
+                    )
+                    with open(test_fn + "-original.pkl", "wb") as f:
+                        # save the recipient root
+                        if isinstance(recipient_node, DefaultTree):
+                            dill.dump(recipient_node.root, f)
+                        else:
+                            recipient_root = recipient_node
+                            while recipient_root.parent:
+                                recipient_root = recipient_root.parent
+                            dill.dump(recipient_root, f)
+                result = creator(recipient_node, donor_node)
                 if tries > 20:
                     break
                 # retry if it fails the fitness criteria
@@ -308,7 +342,7 @@ class SynthFuzzGeneratorTool:
                     f"Failed to generate fit mutant (i={index}) after 20 tries; keeping the mutant anyway."
                 )
         else:
-            result = creator()
+            result = creator(**selector())
         before_transform = deepcopy(result.mutant)
         # ensure there's no aliasing between nodes
         result.mutant = deepcopy(result.mutant)
@@ -405,7 +439,9 @@ class SynthFuzzGeneratorTool:
             level += 1
 
         mutated_node = mutated_node.replace(
-            self.generate(rule=mutated_node.name, max_depth=self._max_depth - level)
+            self.generate(
+                rule=mutated_node.name, max_depth=self._max_depth - level
+            ).mutant
         )
 
         node = mutated_node
@@ -449,7 +485,6 @@ class SynthFuzzGeneratorTool:
 
     def insert(self, recipient_tree: DefaultTree, donor_tree: DefaultTree):
         mutant_recipient_tree = deepcopy(recipient_tree)
-        mutant_donor_tree = deepcopy(donor_tree)
         valid_parents = list(
             self._insert_parents & set(mutant_recipient_tree.nodes_by_name.keys())
         )
@@ -459,10 +494,7 @@ class SynthFuzzGeneratorTool:
             # verify that the donor tree has the required nodes for this insertion pattern
             insert_pattern = self._insert_patterns[parent_name]
             if (
-                len(
-                    insert_pattern.child_rules
-                    - set(mutant_donor_tree.nodes_by_name.keys())
-                )
+                len(insert_pattern.child_rules - set(donor_tree.nodes_by_name.keys()))
                 > 0
             ):
                 continue
